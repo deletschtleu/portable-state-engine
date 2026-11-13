@@ -24,15 +24,15 @@ This file is the canonical task board and requirement-to-test traceability map f
 | **FR-002** | Deterministic state reconstruction | M1 | TASK-003 | `tests/core_replay.rs` | Verified |
 | **FR-003** | Immutable state and event handling | M1 | TASK-002, TASK-003 | `tests/core_contracts.rs`, `tests/core_replay.rs` | Verified |
 | **FR-004** | Invalid commands rejected without recording events | M1, M2, M3 | TASK-002, TASK-005, TASK-006, TASK-007 | Runner + domain rejection tests | Planned |
-| **FR-005** | Replay current state and state at revision `0 <= r <= current` | M1 | TASK-003, TASK-005 | Revision boundary & replay tests | Planned |
-| **FR-006** | Read-only time travel (no mutation or effects) | M1, M2 | TASK-003, TASK-005, TASK-008 | Historical query side-effect-free tests | Planned |
+| **FR-005** | Replay current state and state at revision `0 <= r <= current` | M1 | TASK-003, TASK-005 | `tests/core_replay.rs`, `tests/core_runner.rs` | Verified |
+| **FR-006** | Read-only time travel (no mutation or effects) | M1, M2 | TASK-003, TASK-005, TASK-008 | `tests/core_replay.rs`, `tests/core_runner.rs` | Verified (M1) |
 | **FR-007** | Ascending aggregate version ordering; no gaps/duplicates | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
-| **FR-008** | Optimistic concurrency via `expectedRevision` & conflict error | M1 | TASK-004, TASK-005 | Store concurrency & runner conflict tests | Planned |
+| **FR-008** | Optimistic concurrency via `expectedRevision` & conflict error | M1 | TASK-004, TASK-005 | `tests/store_contract.rs`, `tests/core_runner.rs` | Verified |
 | **FR-009** | Atomic batch append per accepted command | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
 | **FR-010** | Independent streams and versions per aggregate ID | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
-| **FR-011** | Replaceable storage/serialization/presentation boundaries | M1 | TASK-002, TASK-004, TASK-005 | Architecture boundary & zero-import checks | Planned |
-| **FR-012** | Generic command runner for both reference domains | M1, M2, M3 | TASK-005, TASK-006, TASK-007 | Cross-domain runner tests | Planned |
-| **FR-013** | Distinct error categories (validation, not-found/ID, conflict, infra) | M1 | TASK-002, TASK-005 | Error model unit tests | Planned |
+| **FR-011** | Replaceable storage/serialization/presentation boundaries | M1 | TASK-002, TASK-004, TASK-005 | `src/core/*` zero domain/adapter imports | Verified |
+| **FR-012** | Generic command runner for both reference domains | M1, M2, M3 | TASK-005, TASK-006, TASK-007 | `tests/core_runner.rs` | Verified (M1) |
+| **FR-013** | Distinct error categories (validation, not-found/ID, conflict, infra) | M1 | TASK-002, TASK-005 | `tests/core_contracts.rs`, `tests/core_runner.rs` | Verified |
 | **FR-014** | Deterministic in-memory event store adapter | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
 | **FR-015** | Durable storage adapter (e.g., PostgreSQL) | M4 | TASK-009 | Durable store integration tests | Deferred (M4) |
 | **FR-016** | Event envelope metadata & deterministic payload | M1 | TASK-002, TASK-004 | `tests/core_contracts.rs`, `tests/store_contract.rs` | Verified |
@@ -184,36 +184,36 @@ An in-memory event store persists ordered event envelopes per aggregate stream, 
 ---
 
 ## TASK-005 — Generic command runner and read-only query service
-Status: Ready
+Status: Done
 Task ID: TASK-005
 Requirement IDs: FR-004, FR-005, FR-006, FR-008, FR-009, FR-012, FR-013, FR-024, NFR-003, NFR-006
 Dependencies: TASK-003, TASK-004
-Owner / files in scope: `src/core/runner.*`, `tests/core/runner.test.*`
+Owner / files in scope: `src/core/runner.rs`, `tests/core_runner.rs`
 
 ### User-visible outcome
 A generic application runner executes commands (`load -> decide -> append -> evolve`) with optional bounded conflict retries, and provides read-only queries for current state, historical state at revision `r`, and ordered event history.
 
 ### Acceptance criteria
-- [ ] Given a valid command, when `execute` is called on the runner, then it loads current events, reconstructs state, calls `decide`, atomically appends resulting events with `expectedRevision`, and returns the new state, new revision, and committed event envelopes.
-- [ ] Given an invalid command rejected by `decide`, when `execute` is called, then it returns the `DomainRejectionError` and appends zero events to the store (Invariant 5).
-- [ ] Given a command that produces an empty event list (`[]`, no-op), when `execute` is called, then the state and revision remain unchanged and no events are written.
-- [ ] Given a historical query `getStateAtRevision(aggregateId, r)` or `getHistory(aggregateId)`, when executed, then it returns the state at revision `r` (or event list) without modifying stored events or current state (FR-006, Invariant 3).
-- [ ] Invalid/edge scenario: When a concurrent write causes a `RevisionConflictError` during `execute`, the runner either returns `RevisionConflictError` immediately (default `maxRetries = 0`) or reloads current state and re-runs the entire `decide` function up to `maxRetries` times, never blindly appending stale events (FR-008).
+- [x] Given a valid command, when `execute` is called on the runner, then it loads current events, reconstructs state, calls `decide`, atomically appends resulting events with `expectedRevision`, and returns the new state, new revision, and committed event envelopes.
+- [x] Given an invalid command rejected by `decide`, when `execute` is called, then it returns the `DomainRejectionError` and appends zero events to the store (Invariant 5).
+- [x] Given a command that produces an empty event list (`[]`, no-op), when `execute` is called, then the state and revision remain unchanged and no events are written.
+- [x] Given a historical query `getStateAtRevision(aggregateId, r)` or `getHistory(aggregateId)`, when executed, then it returns the state at revision `r` (or event list) without modifying stored events or current state (FR-006, Invariant 3).
+- [x] Invalid/edge scenario: When a concurrent write causes a `RevisionConflictError` during `execute`, the runner either returns `RevisionConflictError` immediately (default `maxRetries = 0`) or reloads current state and re-runs the entire `decide` function up to `maxRetries` times, never blindly appending stale events (FR-008).
 
 ### Risks and decisions
 - Ensure the runner has zero domain-specific branches so both Todo and Tic-Tac-Toe plug directly into it.
 
 ### Test plan
-- RED test(s): Runner tests for accepted commands, multi-event commands, no-op commands, domain rejections, `getStateAtRevision` (`0..current` and out-of-bounds), `getHistory`, and conflict retry/exhaustion behavior using a deterministic conflict-injecting store spy.
+- RED test(s): Runner tests for accepted commands, multi-event commands, no-op commands, domain rejections, `get_state_at_revision` (`0..current` and out-of-bounds), `get_history`, and conflict retry/exhaustion behavior using a deterministic conflict-injecting store spy in `tests/core_runner.rs`.
 - Integration/contract checks: Core + memory store integration.
-- Full verification command(s): Project build + unit/contract test suite.
+- Full verification command(s): `cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check`.
 
 ### Completion evidence
-- Changes: Pending
-- Test results (commands, pass/fail): Pending
-- Review findings/resolution: Pending
-- Passing incremental commits / PR: Pending
-- Remaining limitations / follow-up: Pending
+- Changes: Implemented `EngineRunner`, `ExecutionOptions`, and `ExecutionResult` in `src/core/runner.rs` and added unit/integration tests in `tests/core_runner.rs`.
+- Test results (commands, pass/fail): `cargo test` (12 passed, 0 failed), `cargo clippy --all-targets -- -D warnings` (pass), `cargo fmt --check` (pass).
+- Review findings/resolution: Verified `FR-008` reload + re-decide on retry (demonstrated that a command valid at revision 1 is rejected on retry at revision 2 if a concurrent write invalidated its precondition).
+- Passing incremental commits / PR: Branch `feat/TASK-005-command-runner` (`582af82`), merged to `main`.
+- Remaining limitations / follow-up: Milestone M1 is complete and `src/core/*` is frozen. Next unblocked tasks: `TASK-006` (Todo domain) and `TASK-007` (Tic-Tac-Toe domain).
 
 ---
 
