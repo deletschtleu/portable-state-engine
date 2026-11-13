@@ -1,6 +1,7 @@
 //! Portable Event-Driven State Engine (`PSE-001`).
 
 pub mod adapters;
+pub mod cli;
 pub mod core;
 pub mod domains;
 
