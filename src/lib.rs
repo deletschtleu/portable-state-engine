@@ -1,5 +1,6 @@
 //! Portable Event-Driven State Engine (`PSE-001`).
 
+pub mod adapters;
 pub mod core;
 
 /// Returns the specification identifier implemented by this crate.

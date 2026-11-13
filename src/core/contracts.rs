@@ -44,7 +44,7 @@ impl ExplicitContext {
 }
 
 /// Trait implemented by domain event types so envelopes capture stable type names and schema versions (`FR-016`).
-pub trait DomainEvent: Clone + PartialEq + Eq + fmt::Debug {
+pub trait DomainEvent: Clone + PartialEq + Eq + fmt::Debug + Send + Sync {
     fn event_type(&self) -> &'static str;
 
     fn schema_version(&self) -> u32 {
