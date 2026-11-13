@@ -1,0 +1,22 @@
+# Docker Sandboxes declarative environment file (sbx env)
+# Keep this file tracked in the repository so the agent can update it when
+# tools, kits, environment variables, or ports are added.
+#
+# Because Docker Sandboxes requires `sbxenv.yaml` to live outside any mounted
+# workspace when running `sbx env`, copy it one directory up on the host:
+#   cp sbxenv.yaml ../sbxenv.yaml && cd .. && (sbx env rm || true) && sbx env run
+
+schemaVersion: "1"
+name: antigravity-portable-state-engine
+agent: antigravity
+
+kits:
+  - docker.io/sbx/antigravity:latest
+
+workspace:
+  path: ./portable-state-engine
+  clone: false
+
+additionalWorkspaces:
+  - path: ./global-agent-rules
+    readOnly: false
