@@ -20,7 +20,7 @@ This file is the canonical task board and requirement-to-test traceability map f
 
 | Requirement ID | Summary | Milestone | Task ID(s) | Verification / Test Target | Status |
 |---|---|---|---|---|---|
-| **FR-001** | Generic domain contract (`initialState`, `decide`, `evolve`) | M1 | TASK-002 | Contract unit tests | Planned |
+| **FR-001** | Generic domain contract (`initialState`, `decide`, `evolve`) | M1 | TASK-002 | `tests/core_contracts.rs` | Verified |
 | **FR-002** | Deterministic state reconstruction | M1 | TASK-003 | Replay property & unit tests | Planned |
 | **FR-003** | Immutable state and event handling | M1 | TASK-002, TASK-003 | Immutability checks in replay/domain tests | Planned |
 | **FR-004** | Invalid commands rejected without recording events | M1, M2, M3 | TASK-002, TASK-005, TASK-006, TASK-007 | Runner + domain rejection tests | Planned |
@@ -85,34 +85,34 @@ A developer or agent can run a single documented command (`cargo test`) to build
 ---
 
 ## TASK-002 — Core domain contracts, event envelope, and error model
-Status: Ready
+Status: Done
 Task ID: TASK-002
 Requirement IDs: FR-001, FR-003, FR-004, FR-011, FR-013, FR-016, NFR-001, NFR-002, NFR-006
 Dependencies: TASK-001
-Owner / files in scope: `src/core/contracts.*`, `src/core/errors.*`, `tests/core/contracts.test.*`
+Owner / files in scope: `src/core/mod.rs`, `src/core/contracts.rs`, `src/core/errors.rs`, `tests/core_contracts.rs`
 
 ### User-visible outcome
 Domain modules can be defined against a strictly typed, domain-independent contract (`initialState`, `decide`, `evolve`, `ExplicitContext`, `EventEnvelope`) with structured, distinguishable error categories.
 
 ### Acceptance criteria
-- [ ] Given a dummy domain definition implementing `AggregateDefinition<State, Command, Event>`, when `decide` accepts or rejects a command, then the result clearly distinguishes accepted events (including `[]` no-op) from a `DomainRejectionError`.
-- [ ] Invalid/edge scenario: Error types distinguish `DomainRejectionError`, `InvalidAggregateIdError` / `AggregateNotFoundError`, `RevisionConflictError`, `InvalidRevisionError`, and `StorageFailureError` with diagnostic context (`aggregateId`, `expectedRevision`, `actualRevision`, etc.).
-- [ ] Event envelope structure captures `aggregateId`, `revision` (positive integer `1..n`), `eventId`, `eventType`, `schemaVersion`, `payload`, and `recordedAt` metadata without coupling `decide`/`evolve` to storage.
+- [x] Given a dummy domain definition implementing `AggregateDefinition<State, Command, Event>`, when `decide` accepts or rejects a command, then the result clearly distinguishes accepted events (including `[]` no-op) from a `DomainRejectionError`.
+- [x] Invalid/edge scenario: Error types distinguish `DomainRejectionError`, `InvalidAggregateIdError` / `AggregateNotFoundError`, `RevisionConflictError`, `InvalidRevisionError`, and `StorageFailureError` with diagnostic context (`aggregateId`, `expectedRevision`, `actualRevision`, etc.).
+- [x] Event envelope structure captures `aggregateId`, `revision` (positive integer `1..n`), `eventId`, `eventType`, `schemaVersion`, `payload`, and `recordedAt` metadata without coupling `decide`/`evolve` to storage.
 
 ### Risks and decisions
-- Keep `ExplicitContext` optional or defaulting to empty so simple domains do not require ceremony while supporting deterministic metadata when needed.
+- Keep `ExplicitContext` optional or defaulting to empty so simple domains do not require ceremony while supporting deterministic metadata when needed. Used `BTreeMap` for `ExplicitContext::metadata` to guarantee deterministic iteration (`NFR-010`).
 
 ### Test plan
-- RED test(s): Unit tests constructing each error category, verifying envelope invariants, and testing pure decision results (accepted events, empty no-op list, domain rejection).
+- RED test(s): Unit tests constructing each error category, verifying envelope invariants, and testing pure decision results (accepted events, empty no-op list, domain rejection) in `tests/core_contracts.rs`.
 - Integration/contract checks: Verify `src/core` has zero imports from domain or adapter modules.
-- Full verification command(s): Project build + unit test suite.
+- Full verification command(s): `cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check`.
 
 ### Completion evidence
-- Changes: Pending
-- Test results (commands, pass/fail): Pending
-- Review findings/resolution: Pending
-- Passing incremental commits / PR: Pending
-- Remaining limitations / follow-up: Pending
+- Changes: Implemented `AggregateDefinition`, `DomainEvent`, `ExplicitContext`, `PendingEvent`, `EventEnvelope`, and `validate_aggregate_id` in `src/core/contracts.rs`, and `DomainError`, `EngineError`, and `ErrorCategory` in `src/core/errors.rs`. Added contract tests in `tests/core_contracts.rs`.
+- Test results (commands, pass/fail): `cargo test` (4 passed, 0 failed), `cargo clippy --all-targets -- -D warnings` (pass), `cargo fmt --check` (pass).
+- Review findings/resolution: Verified zero external/domain imports in `src/core`, shared-reference immutability on `decide`/`evolve`, and explicit envelope field validation.
+- Passing incremental commits / PR: Branch `feat/TASK-002-core-contracts` (`4e4e7db`), merged to `main`.
+- Remaining limitations / follow-up: Pure replay (`TASK-003`), in-memory store (`TASK-004`), and generic runner (`TASK-005`) build on these contracts next.
 
 ---
 
