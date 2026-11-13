@@ -25,7 +25,7 @@ This file is the canonical task board and requirement-to-test traceability map f
 | **FR-003** | Immutable state and event handling | M1 | TASK-002, TASK-003 | `tests/core_contracts.rs`, `tests/core_replay.rs` | Verified |
 | **FR-004** | Invalid commands rejected without recording events | M1, M2, M3 | TASK-002, TASK-005, TASK-006, TASK-007 | `tests/core_runner.rs`, `tests/todo_domain.rs`, `tests/tic_tac_toe_domain.rs` | Verified |
 | **FR-005** | Replay current state and state at revision `0 <= r <= current` | M1 | TASK-003, TASK-005 | `tests/core_replay.rs`, `tests/core_runner.rs` | Verified |
-| **FR-006** | Read-only time travel (no mutation or effects) | M1, M2 | TASK-003, TASK-005, TASK-008 | `tests/core_replay.rs`, `tests/core_runner.rs` | Verified (M1) |
+| **FR-006** | Read-only time travel (no mutation or effects) | M1, M2 | TASK-003, TASK-005, TASK-008 | `tests/core_replay.rs`, `tests/core_runner.rs`, `tests/cli_demo.rs` | Verified |
 | **FR-007** | Ascending aggregate version ordering; no gaps/duplicates | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
 | **FR-008** | Optimistic concurrency via `expectedRevision` & conflict error | M1 | TASK-004, TASK-005 | `tests/store_contract.rs`, `tests/core_runner.rs` | Verified |
 | **FR-009** | Atomic batch append per accepted command | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
@@ -43,10 +43,10 @@ This file is the canonical task board and requirement-to-test traceability map f
 | **FR-021** | Explicit external effects outside `decide`/`evolve`/replay | M7 | TASK-012 | Effect isolation tests | Deferred (M7) |
 | **FR-022** | Transactional outbox & idempotent delivery | M7 | TASK-012 | Outbox retry & deduplication tests | Deferred (M7) |
 | **FR-023** | Honest desired vs reported external state | M7 | TASK-012 | Virtual lamp state transition tests | Deferred (M7) |
-| **FR-024** | Inspectable aggregate event history ordered by revision | M1, M2 | TASK-004, TASK-005, TASK-008 | History listing & CLI output tests | Planned |
-| **FR-025** | CLI/API demonstrator for commands, state, history, time travel | M2, M3 | TASK-008 | CLI end-to-end smoke tests | Planned |
-| **FR-026** | Todo & Tic-Tac-Toe run on unchanged core/runner/store contracts | M2, M3 | TASK-006, TASK-007, TASK-008 | Zero core diff verification on M3 | Planned |
-| **NFR-001..010** | Determinism, testability, concurrency, reliability, security, docs | M0–M3 | TASK-001..TASK-008 | Enforced across unit/contract/smoke suites | Planned |
+| **FR-024** | Inspectable aggregate event history ordered by revision | M1, M2 | TASK-004, TASK-005, TASK-008 | `tests/core_runner.rs`, `tests/cli_demo.rs` | Verified |
+| **FR-025** | CLI/API demonstrator for commands, state, history, time travel | M2, M3 | TASK-008 | `tests/cli_demo.rs` (`cargo run -- demo`) | Verified |
+| **FR-026** | Todo & Tic-Tac-Toe run on unchanged core/runner/store contracts | M2, M3 | TASK-006, TASK-007, TASK-008 | Zero `src/core/*` diff across M2/M3 | Verified |
+| **NFR-001..010** | Determinism, testability, concurrency, reliability, security, docs | M0–M3 | TASK-001..TASK-008 | Enforced across unit/contract/smoke suites | Verified (M0–M3) |
 
 ---
 
@@ -290,34 +290,34 @@ A pure 3×3 Tic-Tac-Toe domain module processes `MakeMove(player, cell)` command
 ---
 
 ## TASK-008 — CLI demonstrator for Todo and Tic-Tac-Toe with history and time travel
-Status: Ready
+Status: Done
 Task ID: TASK-008
 Requirement IDs: Milestone M2, Milestone M3, FR-005, FR-006, FR-024, FR-025, FR-026, NFR-008
 Dependencies: TASK-006, TASK-007
-Owner / files in scope: `src/cli/*`, `tests/cli/cli.test.*`, `README.md`
+Owner / files in scope: `src/cli/mod.rs`, `src/main.rs`, `tests/cli_demo.rs`, `README.md`
 
 ### User-visible outcome
 Users and automated tests can run a CLI demonstrator that executes Todo and Tic-Tac-Toe commands, prints current state, lists ordered event history, and queries historical state at any revision `r` without mutating state or history.
 
 ### Acceptance criteria
-- [ ] Given the CLI demo command (or interactive/scripted subcommands), when run for Todo and Tic-Tac-Toe, then it demonstrates accepted commands, rejected invalid commands, ordered event history (`FR-024`), and read-only time-travel state queries at earlier revisions (`FR-006`, `FR-025`).
-- [ ] Invalid/edge scenario: Issuing an invalid command or out-of-range revision query via the CLI reports a clear error without corrupting the aggregate stream or crashing unhandled.
-- [ ] `README.md` documents the quickstart, single build/test command, CLI demo usage, architecture boundaries, invariants, and storage tradeoffs (`NFR-008`).
+- [x] Given the CLI demo command (or interactive/scripted subcommands), when run for Todo and Tic-Tac-Toe, then it demonstrates accepted commands, rejected invalid commands, ordered event history (`FR-024`), and read-only time-travel state queries at earlier revisions (`FR-006`, `FR-025`).
+- [x] Invalid/edge scenario: Issuing an invalid command or out-of-range revision query via the CLI reports a clear error without corrupting the aggregate stream or crashing unhandled.
+- [x] `README.md` documents the quickstart, single build/test command, CLI demo usage, architecture boundaries, invariants, and storage tradeoffs (`NFR-008`).
 
 ### Risks and decisions
-- Support both a deterministic scripted/demo mode (for one-command verification per Section 11) and command-line arguments/subcommands for inspecting commands, history, and revisions.
+- Support both a deterministic default demo mode (`cargo run -- demo`, per Section 11) and scripted subcommands (`cargo run -- todo ...` and `cargo run -- tic-tac-toe ...`) for inspecting commands, history, and revisions.
 
 ### Test plan
-- RED test(s): Automated CLI smoke and integration tests verifying stdout/stderr and exit codes for Todo and Tic-Tac-Toe workflows, including verifying that time-travel queries leave current revision and history unchanged.
-- Integration/contract checks: End-to-end execution of the documented demo command.
-- Full verification command(s): Single build/test command + demo execution command.
+- RED test(s): Automated CLI smoke and integration tests verifying output and error handling for Todo and Tic-Tac-Toe workflows, including verifying that time-travel queries leave current revision and history unchanged in `tests/cli_demo.rs`.
+- Integration/contract checks: End-to-end execution of the documented demo command (`cargo run -- demo`).
+- Full verification command(s): `cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check && cargo run -- demo`.
 
 ### Completion evidence
-- Changes: Pending
-- Test results (commands, pass/fail): Pending
-- Review findings/resolution: Pending
-- Passing incremental commits / PR: Pending
-- Remaining limitations / follow-up: Pending
+- Changes: Implemented `run_cli` in `src/cli/mod.rs` and binary entrypoint `src/main.rs`, added CLI smoke and negative tests in `tests/cli_demo.rs`, and documented quickstart, architecture boundaries, invariants, and storage tradeoffs in `README.md`.
+- Test results (commands, pass/fail): `cargo test` (24 passed, 0 failed), `cargo clippy --all-targets -- -D warnings` (pass), `cargo fmt --check` (pass), `cargo run -- demo` (pass).
+- Review findings/resolution: Verified zero modifications to `src/core/*` across M2 and M3 (`FR-026`) and clear CLI error messages on invalid commands/revisions.
+- Passing incremental commits / PR: Branch `feat/TASK-008-cli-demo` (`2411efc`), merged to `main`.
+- Remaining limitations / follow-up: Baseline milestones M0–M3 (`TASK-001`..`TASK-008`) are complete. Follow-on milestones M4–M8 (`TASK-009`..`TASK-013`) remain deferred per `SPEC.md` Section 10.
 
 ---
 
