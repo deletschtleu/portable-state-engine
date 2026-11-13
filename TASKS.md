@@ -26,16 +26,16 @@ This file is the canonical task board and requirement-to-test traceability map f
 | **FR-004** | Invalid commands rejected without recording events | M1, M2, M3 | TASK-002, TASK-005, TASK-006, TASK-007 | Runner + domain rejection tests | Planned |
 | **FR-005** | Replay current state and state at revision `0 <= r <= current` | M1 | TASK-003, TASK-005 | Revision boundary & replay tests | Planned |
 | **FR-006** | Read-only time travel (no mutation or effects) | M1, M2 | TASK-003, TASK-005, TASK-008 | Historical query side-effect-free tests | Planned |
-| **FR-007** | Ascending aggregate version ordering; no gaps/duplicates | M1 | TASK-004 | Store contract tests | Planned |
+| **FR-007** | Ascending aggregate version ordering; no gaps/duplicates | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
 | **FR-008** | Optimistic concurrency via `expectedRevision` & conflict error | M1 | TASK-004, TASK-005 | Store concurrency & runner conflict tests | Planned |
-| **FR-009** | Atomic batch append per accepted command | M1 | TASK-004 | Store batch atomicity tests | Planned |
-| **FR-010** | Independent streams and versions per aggregate ID | M1 | TASK-004 | Store multi-aggregate isolation tests | Planned |
+| **FR-009** | Atomic batch append per accepted command | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
+| **FR-010** | Independent streams and versions per aggregate ID | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
 | **FR-011** | Replaceable storage/serialization/presentation boundaries | M1 | TASK-002, TASK-004, TASK-005 | Architecture boundary & zero-import checks | Planned |
 | **FR-012** | Generic command runner for both reference domains | M1, M2, M3 | TASK-005, TASK-006, TASK-007 | Cross-domain runner tests | Planned |
 | **FR-013** | Distinct error categories (validation, not-found/ID, conflict, infra) | M1 | TASK-002, TASK-005 | Error model unit tests | Planned |
-| **FR-014** | Deterministic in-memory event store adapter | M1 | TASK-004 | In-memory store contract test suite | Planned |
+| **FR-014** | Deterministic in-memory event store adapter | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
 | **FR-015** | Durable storage adapter (e.g., PostgreSQL) | M4 | TASK-009 | Durable store integration tests | Deferred (M4) |
-| **FR-016** | Event envelope metadata & deterministic payload | M1 | TASK-002, TASK-004 | Envelope contract & store tests | Planned |
+| **FR-016** | Event envelope metadata & deterministic payload | M1 | TASK-002, TASK-004 | `tests/core_contracts.rs`, `tests/store_contract.rs` | Verified |
 | **FR-017** | Snapshot validity & compatibility metadata | M5 | TASK-010 | Stale/incompatible snapshot fallback tests | Deferred (M5) |
 | **FR-018** | Snapshot equivalence to full replay | M5 | TASK-010 | Snapshot vs full-replay property tests | Deferred (M5) |
 | **FR-019** | Event schema evolution / upcasting strategy | M5 | TASK-010 | Versioned event compatibility tests | Deferred (M5) |
@@ -150,36 +150,36 @@ The engine can deterministically fold an ordered event stream into an initial st
 ---
 
 ## TASK-004 — In-memory event store with atomic expected-version append
-Status: Ready
+Status: Done
 Task ID: TASK-004
 Requirement IDs: FR-007, FR-008, FR-009, FR-010, FR-014, FR-016, FR-024, NFR-003
 Dependencies: TASK-002
-Owner / files in scope: `src/core/store.*`, `src/adapters/memory-store.*`, `tests/adapters/store-contract.test.*`
+Owner / files in scope: `src/core/store.rs`, `src/adapters/mod.rs`, `src/adapters/memory_store.rs`, `tests/store_contract.rs`
 
 ### User-visible outcome
 An in-memory event store persists ordered event envelopes per aggregate stream, enforces atomic optimistic concurrency (`expectedRevision`), isolates separate aggregate IDs, and exposes a reusable store contract test suite.
 
 ### Acceptance criteria
-- [ ] Given an aggregate at revision `r` (initially `0`), when a batch of `k` events is appended with `expectedRevision = r`, then all `k` events are assigned contiguous revisions `r+1 .. r+k` and committed atomically (Invariant 4).
-- [ ] Given an aggregate at revision `r`, when an empty event batch (`[]`) is appended with `expectedRevision = r`, then the stream remains at revision `r` with no new events.
-- [ ] Given two appends against the same aggregate with the same `expectedRevision = r` where both are non-empty, when executed sequentially or concurrently, then the first succeeds and the second fails with `RevisionConflictError` leaving the first batch intact (Invariant 6).
-- [ ] Given events appended to `aggregateA` and `aggregateB`, when reading either stream or revision, then each aggregate stream is completely isolated (FR-010).
-- [ ] Invalid/edge scenario: Blank/invalid `aggregateId` is rejected with `InvalidAggregateIdError`; failed appends never leave partial batches in the stream (FR-009).
+- [x] Given an aggregate at revision `r` (initially `0`), when a batch of `k` events is appended with `expectedRevision = r`, then all `k` events are assigned contiguous revisions `r+1 .. r+k` and committed atomically (Invariant 4).
+- [x] Given an aggregate at revision `r`, when an empty event batch (`[]`) is appended with `expectedRevision = r`, then the stream remains at revision `r` with no new events.
+- [x] Given two appends against the same aggregate with the same `expectedRevision = r` where both are non-empty, when executed sequentially or concurrently, then the first succeeds and the second fails with `RevisionConflictError` leaving the first batch intact (Invariant 6).
+- [x] Given events appended to `aggregateA` and `aggregateB`, when reading either stream or revision, then each aggregate stream is completely isolated (FR-010).
+- [x] Invalid/edge scenario: Blank/invalid `aggregateId` is rejected with `InvalidAggregateIdError`; failed appends never leave partial batches in the stream (FR-009).
 
 ### Risks and decisions
-- Write the tests as a reusable `runEventStoreContractSuite(createStore)` so M4's durable adapter can execute the exact same contract tests.
+- Wrote the tests as a reusable `run_event_store_contract_suite(create_store)` in `tests/store_contract.rs` so M4's durable adapter can execute the exact same contract tests.
 
 ### Test plan
-- RED test(s): Reusable store contract tests covering empty stream (`rev 0`), single/multi-event atomic batch append, `RevisionConflictError` on stale/future `expectedRevision`, concurrent append serialization, aggregate isolation, and history listing.
+- RED test(s): Reusable store contract tests covering empty stream (`rev 0`), single/multi-event atomic batch append, `RevisionConflictError` on stale/future `expectedRevision`, multi-threaded concurrent append serialization (`Barrier`), aggregate isolation, and defensive copy history listing in `tests/store_contract.rs`.
 - Integration/contract checks: Verify returned event lists are defensive copies so caller mutation cannot corrupt stored history.
-- Full verification command(s): Project build + unit/contract test suite.
+- Full verification command(s): `cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check`.
 
 ### Completion evidence
-- Changes: Pending
-- Test results (commands, pass/fail): Pending
-- Review findings/resolution: Pending
-- Passing incremental commits / PR: Pending
-- Remaining limitations / follow-up: Pending
+- Changes: Added `EventStore` trait in `src/core/store.rs`, implemented `InMemoryEventStore` with `RwLock<BTreeMap<String, Vec<EventEnvelope<E>>>>` and pre-commit batch validation in `src/adapters/memory_store.rs`, and created `run_event_store_contract_suite` in `tests/store_contract.rs`.
+- Test results (commands, pass/fail): `cargo test` (9 passed, 0 failed), `cargo clippy --all-targets -- -D warnings` (pass), `cargo fmt --check` (pass).
+- Review findings/resolution: Verified pre-validation of entire batch before mutating stream vector, explicit documentation of volatile in-memory semantics (`FR-014`), and multi-threaded barrier test for `NFR-003`.
+- Passing incremental commits / PR: Branch `feat/TASK-004-memory-store` (`f92ea9f`), merged to `main`.
+- Remaining limitations / follow-up: Generic command runner (`TASK-005`) next.
 
 ---
 
