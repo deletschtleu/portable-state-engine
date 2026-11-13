@@ -5,7 +5,7 @@ Copy the block below into `TASKS.md` for each refined task. Keep each task small
 ```markdown
 ## TASK-XXX — <outcome-oriented title>
 Status: Backlog | Refined | Ready | In Progress | Review | Verified | Done | Blocked
-Linear issue / Local ID: <identifier>
+Task ID: <identifier>
 Requirement IDs: <SPEC references>
 Dependencies: <task IDs or None>
 Owner / files in scope: <modules/files>
@@ -30,7 +30,6 @@ Owner / files in scope: <modules/files>
 - Test results (commands, pass/fail): ...
 - Review findings/resolution: ...
 - Passing incremental commits / PR: ...
-- Linear issue link and status (if configured): ...
 - Remaining limitations / follow-up: ...
 ```
 

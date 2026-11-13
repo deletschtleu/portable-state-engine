@@ -82,7 +82,7 @@ If material ambiguity blocks correctness, record it as a decision needed. Otherw
 
 ## 4. Task management and parallel work
 
-Maintain a lightweight task board (**Linear preferred when configured**, otherwise `TASKS.md`):
+Maintain a lightweight task board in `TASKS.md`:
 
 `Backlog → Refined → Ready → In Progress → Review → Verified → Done`
 
@@ -187,7 +187,7 @@ A task is **Done** only when all conditions hold:
 - Review performed and findings resolved.
 - Relevant full checks rerun after the last code change.
 - Documentation, migration/compatibility notes and decision log updated if needed.
-- Task board (Linear when connected, else `TASKS.md`) and requirement traceability updated with issue status, test results, and relevant commits.
+- Task board (`TASKS.md`) and requirement traceability updated with issue status, test results, and relevant commits.
 - Diff is focused and ready to integrate; if Git is available and the project workflow allows it, create a descriptive commit. Never force push or overwrite unrelated work.
 - Any remaining limitations are explicit and separately tracked, not concealed.
 
