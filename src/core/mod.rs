@@ -7,4 +7,5 @@
 pub mod contracts;
 pub mod errors;
 pub mod replay;
+pub mod runner;
 pub mod store;
