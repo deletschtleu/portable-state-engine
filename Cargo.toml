@@ -1,0 +1,8 @@
+[package]
+name = "portable-state-engine"
+version = "0.1.0"
+edition = "2021"
+description = "Portable Event-Driven State Engine (PSE-001)"
+license = "MIT OR Apache-2.0"
+
+[dependencies]

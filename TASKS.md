@@ -53,34 +53,34 @@ This file is the canonical task board and requirement-to-test traceability map f
 ## 3. Active & Refined Tasks (M0–M3)
 
 ## TASK-001 — Project skeleton, toolchain setup, and language ADR
-Status: Ready
+Status: Done
 Task ID: TASK-001
 Requirement IDs: Milestone M0, NFR-002, NFR-007, NFR-008, NFR-010
 Dependencies: None
-Owner / files in scope: `docs/adr/0001-language-and-toolchain.md`, `sbxenv.yaml` / `Dockerfile.sandbox` (if needed), project manifest & test runner config, `README.md`
+Owner / files in scope: `docs/adr/0001-language-and-toolchain.md`, `sbxenv.yaml`, `Dockerfile.sandbox`, `Cargo.toml`, `Cargo.lock`, `.gitignore`, `src/lib.rs`, `README.md`
 
 ### User-visible outcome
-A developer or agent can run a single documented command to build and execute automated tests in a reproducible project setup, with the language/runtime choice documented in an ADR.
+A developer or agent can run a single documented command (`cargo test`) to build and execute automated tests in a reproducible project setup, with the language/runtime choice documented in ADR-0001.
 
 ### Acceptance criteria
-- [ ] Given a fresh checkout in the sandbox, when the documented build/test command is executed, then the test runner executes a smoke test and exits `0`.
-- [ ] Invalid/edge scenario: Failing assertions cause the test runner to exit with a non-zero status code.
-- [ ] Architecture Decision Record (`docs/adr/0001-language-and-toolchain.md`) documents the chosen language, test runner, and zero-dependency core rationale, and `sbxenv.yaml` / sandbox environment recipe is kept in sync if any runtime kit/package is added.
+- [x] Given a fresh checkout in the sandbox, when the documented build/test command is executed, then the test runner executes a smoke test and exits `0`.
+- [x] Invalid/edge scenario: Failing assertions cause the test runner to exit with a non-zero status code.
+- [x] Architecture Decision Record (`docs/adr/0001-language-and-toolchain.md`) documents the chosen language, test runner, and zero-dependency core rationale, and `sbxenv.yaml` / `Dockerfile.sandbox` are kept in sync with the installed Rust 1.85.1 package set.
 
 ### Risks and decisions
-- Sandbox base image is `Docker Hardened Images/Debian GNU/Linux 13 (trixie)`; any installed language toolchain must be persisted declaratively per `SANDBOX.md`.
+- Sandbox base image is `Docker Hardened Images/Debian GNU/Linux 13 (trixie)`; Rust 1.85.1 (`rustc`, `cargo`, `rustfmt`, `rust-clippy`, `build-essential`) is installed via `apt-get` and recorded declaratively in `Dockerfile.sandbox` and `sbxenv.yaml` per `SANDBOX.md`.
 
 ### Test plan
-- RED test(s): Initial sanity test verifying test runner catches a failing assertion before turning green.
-- Integration/contract checks: Single build/test command succeeds cleanly.
-- Full verification command(s): Project test command (to be finalized in ADR-0001).
+- RED test(s): Initial sanity test (`tests::reports_canonical_specification_id`) failed as expected (`left: "TODO"`, `right: "PSE-001"`) before implementation.
+- Integration/contract checks: Single build/test command (`cargo test`) succeeds cleanly with zero warnings.
+- Full verification command(s): `cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check`.
 
 ### Completion evidence
-- Changes: Pending
-- Test results (commands, pass/fail): Pending
-- Review findings/resolution: Pending
-- Passing incremental commits / PR: Pending
-- Remaining limitations / follow-up: Pending
+- Changes: Added `Dockerfile.sandbox`, updated `sbxenv.yaml`, wrote `docs/adr/0001-language-and-toolchain.md`, initialized `Cargo.toml`, `src/lib.rs`, `.gitignore`, and documented build/test commands in `README.md`.
+- Test results (commands, pass/fail): `cargo test` (1 passed, 0 failed), `cargo clippy --all-targets -- -D warnings` (pass), `cargo fmt --check` (pass).
+- Review findings/resolution: Verified zero external dependencies in `Cargo.toml`, pinned package versions in `Dockerfile.sandbox`, and clean `git status`.
+- Passing incremental commits / PR: Committed on branch `main` (see git log).
+- Remaining limitations / follow-up: Core engine contracts and replay logic are implemented next in `TASK-002` through `TASK-005`.
 
 ---
 

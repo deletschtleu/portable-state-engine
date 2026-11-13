@@ -1,0 +1,16 @@
+# Declarative sandbox environment recipe for Portable State Engine
+# Synchronized with system packages installed in the Docker Sandbox (per SANDBOX.md).
+FROM docker.io/sbx/antigravity:latest
+
+USER root
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      build-essential=12.12+dhi1 \
+      ca-certificates \
+      cargo=1.85.1+dfsg1-1+deb13u1 \
+      rust-clippy=1.85.1+dfsg1-1+deb13u1 \
+      rustc=1.85.1+dfsg1-1+deb13u1 \
+      rustfmt=1.85.1+dfsg1-1+deb13u1 && \
+    rm -rf /var/lib/apt/lists/*
+
+USER agent

@@ -6,6 +6,15 @@ Language-independent specification for an event-driven state engine with Todo an
 - [`AGENTS.md`](AGENTS.md) adds project-specific instructions to the global agent rules.
 - [`AGENT_WORKFLOW.md`](AGENT_WORKFLOW.md) contains project-specific execution and verification details.
 - [`TASK_TEMPLATE.md`](TASK_TEMPLATE.md) is the task template for [`TASKS.md`](TASKS.md).
+- [`docs/adr/0001-language-and-toolchain.md`](docs/adr/0001-language-and-toolchain.md) records the Rust 1.85 toolchain and zero-dependency core decision.
+
+## Build and test
+
+```bash
+cargo test
+cargo clippy --all-targets -- -D warnings
+cargo fmt --check
+```
 
 ## Starting an implementation
 

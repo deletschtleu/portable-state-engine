@@ -12,6 +12,8 @@ agent: antigravity
 
 kits:
   - docker.io/sbx/antigravity:latest
+  # Note: Rust 1.85.1 toolchain (rustc, cargo, rustfmt, rust-clippy, build-essential)
+  # is specified declaratively in Dockerfile.sandbox.
 
 workspace:
   path: ./portable-state-engine
