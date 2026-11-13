@@ -218,40 +218,40 @@ A generic application runner executes commands (`load -> decide -> append -> evo
 ---
 
 ## TASK-006 — Reference domain A: Todo list module
-Status: Ready
+Status: Done
 Task ID: TASK-006
 Requirement IDs: Milestone M2, FR-001..FR-006, FR-012, FR-026, Section 5 (Todo specification)
 Dependencies: TASK-005
-Owner / files in scope: `src/domains/todo/*`, `tests/domains/todo.test.*`
+Owner / files in scope: `src/domains/mod.rs`, `src/domains/todo.rs`, `tests/todo_domain.rs`
 
 ### User-visible outcome
 A pure Todo domain module supports `AddTodo`, `CompleteTodo`, and `DeleteTodo` with permanent IDs, deterministic ordering, and time-travel inspection through the generic engine runner.
 
 ### Acceptance criteria
-- [ ] **Scenario: Replay a Todo list** — Given an empty list at revision 0, when `AddTodo("a", "Write tests")`, `AddTodo("b", "Build engine")`, and `CompleteTodo("a")` are accepted, then current revision is 3, Todo `"a"` is completed, Todo `"b"` is open, and state at revision 1 contains only open Todo `"a"`.
-- [ ] **Scenario: Reject duplicate IDs** — Given `AddTodo("a", "Write tests")` is committed, when `AddTodo("a", "Something else")` is requested, then the command is rejected and no new event is appended.
-- [ ] **Scenario: Permanent ID after deletion** — Given Todo `"a"` was added and then deleted via `DeleteTodo("a")`, when `AddTodo("a", "Reused ID")` is requested, then the command is rejected because `"a"` remains in `usedIds`, while revision 1 still reconstructs Todo `"a"`.
-- [ ] **Scenario: Historical read is side-effect-free** — Given a list with 3 events, when state at revision 1 is requested, then its contents match the first event applied to initial state and current revision/history are unchanged.
-- [ ] Invalid/edge scenarios:
+- [x] **Scenario: Replay a Todo list** — Given an empty list at revision 0, when `AddTodo("a", "Write tests")`, `AddTodo("b", "Build engine")`, and `CompleteTodo("a")` are accepted, then current revision is 3, Todo `"a"` is completed, Todo `"b"` is open, and state at revision 1 contains only open Todo `"a"`.
+- [x] **Scenario: Reject duplicate IDs** — Given `AddTodo("a", "Write tests")` is committed, when `AddTodo("a", "Something else")` is requested, then the command is rejected and no new event is appended.
+- [x] **Scenario: Permanent ID after deletion** — Given Todo `"a"` was added and then deleted via `DeleteTodo("a")`, when `AddTodo("a", "Reused ID")` is requested, then the command is rejected because `"a"` remains in `usedIds`, while revision 1 still reconstructs Todo `"a"`.
+- [x] **Scenario: Historical read is side-effect-free** — Given a list with 3 events, when state at revision 1 is requested, then its contents match the first event applied to initial state and current revision/history are unchanged.
+- [x] Invalid/edge scenarios:
   - `AddTodo` with blank or whitespace-only title or blank ID is rejected.
   - `CompleteTodo` on an already completed Todo succeeds as a no-op (`[]` events, revision unchanged).
   - `CompleteTodo` or `DeleteTodo` on an unknown or already-deleted ID is rejected without emitting events.
   - Todo items are returned in deterministic append order, and state objects are deeply immutable.
 
 ### Risks and decisions
-- Track `usedIds` alongside active `todos` in the immutable `TodoListState` so deleted IDs cannot be reused after replay.
+- Track `used_ids` (`BTreeSet<String>`) alongside active `todos` (`Vec<TodoItem>`) in the immutable `TodoListState` so deleted IDs cannot be reused after replay and item order is deterministic.
 
 ### Test plan
-- RED test(s): Unit tests for pure `decide`/`evolve` and runner-integrated acceptance scenarios from `SPEC.md` Section 5 + edge cases (whitespace title, deleted ID reuse, idempotent complete, immutability).
+- RED test(s): Unit tests for pure `decide`/`evolve` and runner-integrated acceptance scenarios from `SPEC.md` Section 5 + edge cases (whitespace title, deleted ID reuse, idempotent complete, immutability) in `tests/todo_domain.rs`.
 - Integration/contract checks: Verify zero changes to `src/core/*`.
-- Full verification command(s): Project build + full test suite.
+- Full verification command(s): `cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check`.
 
 ### Completion evidence
-- Changes: Pending
-- Test results (commands, pass/fail): Pending
-- Review findings/resolution: Pending
-- Passing incremental commits / PR: Pending
-- Remaining limitations / follow-up: Pending
+- Changes: Implemented `TodoDomain`, `TodoListState`, `TodoItem`, `TodoCommand`, and `TodoEvent` in `src/domains/todo.rs` and added acceptance and edge-case tests in `tests/todo_domain.rs`.
+- Test results (commands, pass/fail): `cargo test` (16 passed, 0 failed), `cargo clippy --all-targets -- -D warnings` (pass), `cargo fmt --check` (pass).
+- Review findings/resolution: Confirmed `git diff main -- src/core/` is empty (`FR-026`) and deleted IDs remain permanently reserved in `used_ids`.
+- Passing incremental commits / PR: Branch `feat/TASK-006-todo-domain` (`6253ce1`), merged to `main`.
+- Remaining limitations / follow-up: Next unblocked tasks: `TASK-007` (Tic-Tac-Toe domain) and `TASK-008` (CLI demonstrator).
 
 ---
 
