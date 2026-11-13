@@ -2,6 +2,7 @@
 
 pub mod adapters;
 pub mod core;
+pub mod domains;
 
 /// Returns the specification identifier implemented by this crate.
 pub fn spec_id() -> &'static str {
