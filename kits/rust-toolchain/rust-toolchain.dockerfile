@@ -1,5 +1,5 @@
-# Declarative sandbox environment recipe for Portable State Engine
-# Synchronized with system packages installed in the Docker Sandbox (per SANDBOX.md).
+# Declarative sandbox kit Dockerfile for Portable State Engine
+# Layers the Debian trixie Rust 1.85.1 toolchain onto the base agent workload.
 FROM docker.io/sbx/antigravity:latest
 
 USER root

@@ -57,7 +57,7 @@ Status: Done
 Task ID: TASK-001
 Requirement IDs: Milestone M0, NFR-002, NFR-007, NFR-008, NFR-010
 Dependencies: None
-Owner / files in scope: `docs/adr/0001-language-and-toolchain.md`, `sbxenv.yaml`, `Dockerfile.sandbox`, `Cargo.toml`, `Cargo.lock`, `.gitignore`, `src/lib.rs`, `README.md`
+Owner / files in scope: `docs/adr/0001-language-and-toolchain.md`, `sbxenv.yaml`, `kits/rust-toolchain/*`, `Cargo.toml`, `Cargo.lock`, `.gitignore`, `src/lib.rs`, `README.md`
 
 ### User-visible outcome
 A developer or agent can run a single documented command (`cargo test`) to build and execute automated tests in a reproducible project setup, with the language/runtime choice documented in ADR-0001.
@@ -65,10 +65,10 @@ A developer or agent can run a single documented command (`cargo test`) to build
 ### Acceptance criteria
 - [x] Given a fresh checkout in the sandbox, when the documented build/test command is executed, then the test runner executes a smoke test and exits `0`.
 - [x] Invalid/edge scenario: Failing assertions cause the test runner to exit with a non-zero status code.
-- [x] Architecture Decision Record (`docs/adr/0001-language-and-toolchain.md`) documents the chosen language, test runner, and zero-dependency core rationale, and `sbxenv.yaml` / `Dockerfile.sandbox` are kept in sync with the installed Rust 1.85.1 package set.
+- [x] Architecture Decision Record (`docs/adr/0001-language-and-toolchain.md`) documents the chosen language, test runner, and zero-dependency core rationale, and `sbxenv.yaml` + `kits/rust-toolchain/` are kept in sync with the installed Rust 1.85.1 package set.
 
 ### Risks and decisions
-- Sandbox base image is `Docker Hardened Images/Debian GNU/Linux 13 (trixie)`; Rust 1.85.1 (`rustc`, `cargo`, `rustfmt`, `rust-clippy`, `build-essential`) is installed via `apt-get` and recorded declaratively in `Dockerfile.sandbox` and `sbxenv.yaml` per `SANDBOX.md`.
+- Sandbox base image is `Docker Hardened Images/Debian GNU/Linux 13 (trixie)`; Rust 1.85.1 (`rustc`, `cargo`, `rustfmt`, `rust-clippy`, `build-essential`) is installed via `apt-get` and packaged declaratively as a local v3 mixin kit in `kits/rust-toolchain/` referenced by `sbxenv.yaml` per `SANDBOX.md`.
 
 ### Test plan
 - RED test(s): Initial sanity test (`tests::reports_canonical_specification_id`) failed as expected (`left: "TODO"`, `right: "PSE-001"`) before implementation.
@@ -76,9 +76,9 @@ A developer or agent can run a single documented command (`cargo test`) to build
 - Full verification command(s): `cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check`.
 
 ### Completion evidence
-- Changes: Added `Dockerfile.sandbox`, updated `sbxenv.yaml`, wrote `docs/adr/0001-language-and-toolchain.md`, initialized `Cargo.toml`, `src/lib.rs`, `.gitignore`, and documented build/test commands in `README.md`.
+- Changes: Added local v3 mixin kit `kits/rust-toolchain/` (`rust-toolchain.yaml` and `rust-toolchain.dockerfile`), updated `sbxenv.yaml`, wrote `docs/adr/0001-language-and-toolchain.md`, initialized `Cargo.toml`, `src/lib.rs`, `.gitignore`, and documented build/test commands in `README.md`.
 - Test results (commands, pass/fail): `cargo test` (1 passed, 0 failed), `cargo clippy --all-targets -- -D warnings` (pass), `cargo fmt --check` (pass).
-- Review findings/resolution: Verified zero external dependencies in `Cargo.toml`, pinned package versions in `Dockerfile.sandbox`, and clean `git status`.
+- Review findings/resolution: Verified zero external dependencies in `Cargo.toml`, pinned package versions in `kits/rust-toolchain/rust-toolchain.dockerfile`, and clean `git status`.
 - Passing incremental commits / PR: Committed on branch `main` (see git log).
 - Remaining limitations / follow-up: Core engine contracts and replay logic are implemented next in `TASK-002` through `TASK-005`.
 

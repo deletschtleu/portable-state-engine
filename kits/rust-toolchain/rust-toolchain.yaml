@@ -1,0 +1,9 @@
+# syntax=docker/sandbox-kit:3
+schemaVersion: "3"
+kind: mixin
+displayName: Rust Toolchain Mixin
+description: Adds Rust 1.85.1 (rustc, cargo, rustfmt, clippy) and build-essential to the sandbox
+version: "1.0.0"
+
+provides:
+  - "rust@1.85.1"
