@@ -23,7 +23,7 @@ This file is the canonical task board and requirement-to-test traceability map f
 | **FR-001** | Generic domain contract (`initialState`, `decide`, `evolve`) | M1 | TASK-002 | `tests/core_contracts.rs` | Verified |
 | **FR-002** | Deterministic state reconstruction | M1 | TASK-003 | `tests/core_replay.rs` | Verified |
 | **FR-003** | Immutable state and event handling | M1 | TASK-002, TASK-003 | `tests/core_contracts.rs`, `tests/core_replay.rs` | Verified |
-| **FR-004** | Invalid commands rejected without recording events | M1, M2, M3 | TASK-002, TASK-005, TASK-006, TASK-007 | Runner + domain rejection tests | Planned |
+| **FR-004** | Invalid commands rejected without recording events | M1, M2, M3 | TASK-002, TASK-005, TASK-006, TASK-007 | `tests/core_runner.rs`, `tests/todo_domain.rs`, `tests/tic_tac_toe_domain.rs` | Verified |
 | **FR-005** | Replay current state and state at revision `0 <= r <= current` | M1 | TASK-003, TASK-005 | `tests/core_replay.rs`, `tests/core_runner.rs` | Verified |
 | **FR-006** | Read-only time travel (no mutation or effects) | M1, M2 | TASK-003, TASK-005, TASK-008 | `tests/core_replay.rs`, `tests/core_runner.rs` | Verified (M1) |
 | **FR-007** | Ascending aggregate version ordering; no gaps/duplicates | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
@@ -31,7 +31,7 @@ This file is the canonical task board and requirement-to-test traceability map f
 | **FR-009** | Atomic batch append per accepted command | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
 | **FR-010** | Independent streams and versions per aggregate ID | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
 | **FR-011** | Replaceable storage/serialization/presentation boundaries | M1 | TASK-002, TASK-004, TASK-005 | `src/core/*` zero domain/adapter imports | Verified |
-| **FR-012** | Generic command runner for both reference domains | M1, M2, M3 | TASK-005, TASK-006, TASK-007 | `tests/core_runner.rs` | Verified (M1) |
+| **FR-012** | Generic command runner for both reference domains | M1, M2, M3 | TASK-005, TASK-006, TASK-007 | `tests/core_runner.rs`, `tests/todo_domain.rs`, `tests/tic_tac_toe_domain.rs` | Verified |
 | **FR-013** | Distinct error categories (validation, not-found/ID, conflict, infra) | M1 | TASK-002, TASK-005 | `tests/core_contracts.rs`, `tests/core_runner.rs` | Verified |
 | **FR-014** | Deterministic in-memory event store adapter | M1 | TASK-004 | `tests/store_contract.rs` | Verified |
 | **FR-015** | Durable storage adapter (e.g., PostgreSQL) | M4 | TASK-009 | Durable store integration tests | Deferred (M4) |
@@ -256,36 +256,36 @@ A pure Todo domain module supports `AddTodo`, `CompleteTodo`, and `DeleteTodo` w
 ---
 
 ## TASK-007 — Reference domain B: Tic-Tac-Toe module
-Status: Ready
+Status: Done
 Task ID: TASK-007
 Requirement IDs: Milestone M3, FR-001..FR-006, FR-012, FR-026, Section 6 (Tic-Tac-Toe specification)
 Dependencies: TASK-005
-Owner / files in scope: `src/domains/tic-tac-toe/*`, `tests/domains/tic-tac-toe.test.*`
+Owner / files in scope: `src/domains/mod.rs`, `src/domains/tic_tac_toe.rs`, `tests/tic_tac_toe_domain.rs`
 
 ### User-visible outcome
 A pure 3×3 Tic-Tac-Toe domain module processes `MakeMove(player, cell)` commands, detects all row/column/diagonal wins and draws deterministically, rejects illegal moves, and replays identically across independent engine instances without any changes to the core engine.
 
 ### Acceptance criteria
-- [ ] **Scenario: Deterministic victory** — Given a new game with `X` to move (`cells 0..8` empty, status `in-progress`), when `X` moves at `0`, `O` at `3`, `X` at `1`, `O` at `4`, and `X` at `2`, then `X` is the winner (`status = "X-won"`, `nextPlayer = null`), the game is terminal, and a further move is rejected without an event.
-- [ ] **Scenario: Reject illegal move** — Given `X` has moved at cell `0`, when `O` attempts cell `0` (occupied), or `X` attempts to move out of turn, or a player attempts cell `-1` or `9` (out of range), then the command is rejected and the revision and board are unchanged.
-- [ ] **Scenario: All win lines and draw** — Winner detection covers all 3 rows (`0,1,2`, `3,4,5`, `6,7,8`), all 3 columns (`0,3,6`, `1,4,7`, `2,5,8`), both diagonals (`0,4,8`, `2,4,6`), and a full 9-move non-winning board transitions to `status = "draw"` (and rejects subsequent moves).
-- [ ] **Scenario: Cross-instance replay** — Given two independent engine instances with the same rules and initial state, when both replay the same ordered game events, then both produce equivalent boards, turns, and status, and historical revisions (`0..n`) reconstruct every prior turn accurately.
+- [x] **Scenario: Deterministic victory** — Given a new game with `X` to move (`cells 0..8` empty, status `in-progress`), when `X` moves at `0`, `O` at `3`, `X` at `1`, `O` at `4`, and `X` at `2`, then `X` is the winner (`status = "X-won"`, `nextPlayer = null`), the game is terminal, and a further move is rejected without an event.
+- [x] **Scenario: Reject illegal move** — Given `X` has moved at cell `0`, when `O` attempts cell `0` (occupied), or `X` attempts to move out of turn, or a player attempts cell `-1` or `9` (out of range), then the command is rejected and the revision and board are unchanged.
+- [x] **Scenario: All win lines and draw** — Winner detection covers all 3 rows (`0,1,2`, `3,4,5`, `6,7,8`), all 3 columns (`0,3,6`, `1,4,7`, `2,5,8`), both diagonals (`0,4,8`, `2,4,6`), and a full 9-move non-winning board transitions to `status = "draw"` (and rejects subsequent moves).
+- [x] **Scenario: Cross-instance replay** — Given two independent engine instances with the same rules and initial state, when both replay the same ordered game events, then both produce equivalent boards, turns, and status, and historical revisions (`0..n`) reconstruct every prior turn accurately.
 
 ### Risks and decisions
 - Cell addressing is `0..8` in row-major order (`0..2` top row, `3..5` middle row, `6..8` bottom row); game starts at revision `0` with `X` to move and status `in-progress`.
-- Core files (`src/core/*`) MUST remain untouched when implementing this task.
+- Core files (`src/core/*`) remained 100% untouched when implementing this task (`git diff main -- src/core/` is empty).
 
 ### Test plan
-- RED test(s): Table-driven unit tests for all 8 winning lines (for both X and O), draw scenario, out-of-turn/occupied/out-of-bounds/post-terminal rejections, cross-instance replay, and time-travel revision inspection.
+- RED test(s): Table-driven unit tests for all 8 winning lines (for both X and O), draw scenario, out-of-turn/occupied/out-of-bounds/post-terminal rejections, cross-instance replay, and time-travel revision inspection in `tests/tic_tac_toe_domain.rs`.
 - Integration/contract checks: `git diff` confirms zero modifications to `src/core/*`.
-- Full verification command(s): Project build + full test suite.
+- Full verification command(s): `cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check`.
 
 ### Completion evidence
-- Changes: Pending
-- Test results (commands, pass/fail): Pending
-- Review findings/resolution: Pending
-- Passing incremental commits / PR: Pending
-- Remaining limitations / follow-up: Pending
+- Changes: Implemented `TicTacToeDomain`, `TicTacToeState`, `Player`, `GameStatus`, `TicTacToeCommand`, and `TicTacToeEvent` in `src/domains/tic_tac_toe.rs` and added acceptance and table-driven win/draw/replay tests in `tests/tic_tac_toe_domain.rs`.
+- Test results (commands, pass/fail): `cargo test` (20 passed, 0 failed), `cargo clippy --all-targets -- -D warnings` (pass), `cargo fmt --check` (pass).
+- Review findings/resolution: Confirmed zero modifications to `src/core/*` (`FR-026`) and deterministic evaluation of all 8 win lines + draw.
+- Passing incremental commits / PR: Branch `feat/TASK-007-tic-tac-toe-domain` (`bb88423`), merged to `main`.
+- Remaining limitations / follow-up: Next unblocked task: `TASK-008` (CLI demonstrator and comprehensive `README.md`).
 
 ---
 
