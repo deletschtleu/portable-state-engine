@@ -21,8 +21,8 @@ This file is the canonical task board and requirement-to-test traceability map f
 | Requirement ID | Summary | Milestone | Task ID(s) | Verification / Test Target | Status |
 |---|---|---|---|---|---|
 | **FR-001** | Generic domain contract (`initialState`, `decide`, `evolve`) | M1 | TASK-002 | `tests/core_contracts.rs` | Verified |
-| **FR-002** | Deterministic state reconstruction | M1 | TASK-003 | Replay property & unit tests | Planned |
-| **FR-003** | Immutable state and event handling | M1 | TASK-002, TASK-003 | Immutability checks in replay/domain tests | Planned |
+| **FR-002** | Deterministic state reconstruction | M1 | TASK-003 | `tests/core_replay.rs` | Verified |
+| **FR-003** | Immutable state and event handling | M1 | TASK-002, TASK-003 | `tests/core_contracts.rs`, `tests/core_replay.rs` | Verified |
 | **FR-004** | Invalid commands rejected without recording events | M1, M2, M3 | TASK-002, TASK-005, TASK-006, TASK-007 | Runner + domain rejection tests | Planned |
 | **FR-005** | Replay current state and state at revision `0 <= r <= current` | M1 | TASK-003, TASK-005 | Revision boundary & replay tests | Planned |
 | **FR-006** | Read-only time travel (no mutation or effects) | M1, M2 | TASK-003, TASK-005, TASK-008 | Historical query side-effect-free tests | Planned |
@@ -117,35 +117,35 @@ Domain modules can be defined against a strictly typed, domain-independent contr
 ---
 
 ## TASK-003 — Pure `replay` and historical revision reconstruction
-Status: Ready
+Status: Done
 Task ID: TASK-003
 Requirement IDs: FR-002, FR-003, FR-005, FR-006, FR-007, NFR-001, NFR-002, NFR-010
 Dependencies: TASK-002
-Owner / files in scope: `src/core/replay.*`, `tests/core/replay.test.*`
+Owner / files in scope: `src/core/replay.rs`, `tests/core_replay.rs`
 
 ### User-visible outcome
 The engine can deterministically fold an ordered event stream into an initial state to compute current state or the historical state at any revision `0 <= r <= currentRevision` without mutating inputs or triggering side effects.
 
 ### Acceptance criteria
-- [ ] Given an empty event stream, when `replay` is called, then it returns `initialState` at revision `0` (Invariant 1).
-- [ ] Given an event stream `history + newEvents`, when `replay` is called on the combined stream, then the resulting state and revision equal folding `evolve` over `newEvents` starting from `replay(history)` (Invariant 2).
-- [ ] Given a stream of `n` events and a target revision `r` (`0 <= r <= n`), when `replayAtRevision` is called, then it returns the exact state at revision `r` without mutating `initialState`, intermediate states, or the input event list (Invariant 3, 8).
-- [ ] Invalid/edge scenario: Requesting a negative revision (`r < 0`), a revision beyond committed history (`r > n`), or replaying non-contiguous/out-of-order event revisions raises a typed error (`InvalidRevisionError` / `CorruptedStreamError`).
+- [x] Given an empty event stream, when `replay` is called, then it returns `initialState` at revision `0` (Invariant 1).
+- [x] Given an event stream `history + newEvents`, when `replay` is called on the combined stream, then the resulting state and revision equal folding `evolve` over `newEvents` starting from `replay(history)` (Invariant 2).
+- [x] Given a stream of `n` events and a target revision `r` (`0 <= r <= n`), when `replayAtRevision` is called, then it returns the exact state at revision `r` without mutating `initialState`, intermediate states, or the input event list (Invariant 3, 8).
+- [x] Invalid/edge scenario: Requesting a negative revision (`r < 0`), a revision beyond committed history (`r > n`), or replaying non-contiguous/out-of-order event revisions raises a typed error (`InvalidRevisionError` / `CorruptedStreamError`).
 
 ### Risks and decisions
-- Enforce contiguous ascending revisions (`1, 2, ..., n`) during replay so corrupted streams fail fast.
+- Enforce contiguous ascending revisions (`1, 2, ..., n`) and single-aggregate consistency during replay so corrupted streams fail fast (`validate_contiguous_stream`).
 
 ### Test plan
-- RED test(s): Unit and property/invariant tests for empty stream, prefix replay (`0..n`), incremental fold equivalence, input immutability, and out-of-range/non-contiguous revision errors.
+- RED test(s): Unit and property/invariant tests for empty stream, prefix replay (`0..n`), incremental fold equivalence, input immutability, and out-of-range/non-contiguous revision errors in `tests/core_replay.rs`.
 - Integration/contract checks: Pure function execution with zero I/O.
-- Full verification command(s): Project build + unit test suite.
+- Full verification command(s): `cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check`.
 
 ### Completion evidence
-- Changes: Pending
-- Test results (commands, pass/fail): Pending
-- Review findings/resolution: Pending
-- Passing incremental commits / PR: Pending
-- Remaining limitations / follow-up: Pending
+- Changes: Implemented `ReplayResult`, `validate_contiguous_stream`, `evolve_all`, `replay`, and `replay_at_revision` in `src/core/replay.rs` and added invariant tests in `tests/core_replay.rs`.
+- Test results (commands, pass/fail): `cargo test` (8 passed, 0 failed), `cargo clippy --all-targets -- -D warnings` (pass), `cargo fmt --check` (pass).
+- Review findings/resolution: Confirmed input slices and initial states are never mutated and corrupted/non-contiguous streams fail with `EngineError::CorruptedStream`.
+- Passing incremental commits / PR: Branch `feat/TASK-003-event-replay` (`122c815`), merged to `main`.
+- Remaining limitations / follow-up: Store contract (`TASK-004`) and runner (`TASK-005`) next.
 
 ---
 
